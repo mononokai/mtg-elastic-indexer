@@ -1,0 +1,182 @@
+- artist?: string
+- artistIds?: string[]
+- asciiName?: string
+- attractionLights?: number[]
+- availability: string[]
+- boosterTypes?: string[]
+- borderColor: string
+- cardParts?: string[]
+- colorIdentity: string[]
+- colorIndicator?: string[]
+- colors: string[]
+- convertedManaCost: number
+- defense?: string
+- duelDeck?: string
+- edhrecRank?: number
+- edhrecSaltiness?: number
+- faceConvertedManaCost?: number
+- faceFlavorName?: string
+- faceManaValue?: number
+- faceName?: string
+- finishes: string[]
+- flavorName?: string
+- flavorText?: string
+- foreignData?: []
+    - face-name: string
+    - flavor-text: string
+    - identifiers: []
+        - abuId?: string
+        - cardKingdomEtchedId?: string
+        - cardKingdomFoilId?: string
+        - cardKingdomId?: string
+        - cardsphereId?: string
+        - cardsphereFoilId?: string
+        - cardtraderId?: string
+        - csiId?: string
+        - mcmId?: string
+        - mcmMetaId?: string
+        - miniaturemarketId?: string
+        - mtgArenaId?: string
+        - mtgjsonFoilVersionId?: string
+        - mtgjsonNonFoilVersionId?: string
+        - mtgjsonV4Id?: string
+        - mtgoFoilId?: string
+        - mtgoId?: string
+        - multiverseId?: string
+        - scgId?: string
+        - scryfallId?: string
+        - scryfallCardBackId?: string
+        - scryfallOracleId?: string
+        - scryfallIllustrationId?: string
+        - tcgplayerProductId?: string
+        - tcgplayerEtchedProductId?: string
+        - tntId?: string
+    - language: string
+    - name: string
+    - text?: string
+    - type?: string
+- frameEffects?: string[]
+- frameVersion: string
+- hand?: string
+- hasAlternativeDeckLimit?: boolean
+- hasContentWarning?: boolean
+- hasFoil: boolean
+- hasNonFoil: boolean
+- identifiers: {}
+    - abuId?: string
+    - cardKingdomEtchedId?: string
+    - cardKingdomFoilId?: string
+    - cardKingdomId?: string
+    - cardsphereId?: string
+    - cardsphereFoilId?: string
+    - cardtraderId?: string
+    - csiId?: string
+    - mcmId?: string
+    - mcmMetaId?: string
+    - miniaturemarketId?: string
+    - mtgArenaId?: string
+    - mtgjsonFoilVersionId?: string
+    - mtgjsonNonFoilVersionId?: string
+    - mtgjsonV4Id?: string
+    - mtgoFoilId?: string
+    - mtgoId?: string
+    - multiverseId?: string
+    - scgId?: string
+    - scryfallId?: string
+    - scryfallCardBackId?: string
+    - scryfallOracleId?: string
+    - scryfallIllustrationId?: string
+    - tcgplayerProductId?: string
+    - tcgplayerEtchedProductId?: string
+    - tntId?: string
+- isAlternative?: boolean
+- isFullArt?: boolean
+- isFunny?: boolean
+- isOnlineOnly?: boolean
+- isOversized?: boolean
+- isPromo?: boolean
+- isRebalanced?: boolean
+- isReprint?: boolean
+- isReserved?: boolean
+- isStarter?: boolean
+- isStorySpotlight?: boolean
+- isTextless?: boolean
+- isTimeshifted?: boolean
+- keywords?: string[]
+- language: string
+- layout: string
+- leadershipSkills?: {}
+    - brawl: boolean
+    - commander: boolean
+    - oathbreaker: boolean
+- legalities: {}
+    - alchemy?: string
+    - brawl?: string
+    - commander?: string
+    - duel?: string
+    - explorer?: string
+    - future?: string
+    - gladiator?: string
+    - historic?: string
+    - historicbrawl?: string
+    - legacy?: string
+    - modern?: string
+    - oathbreaker?: string
+    - oldschool?: string
+    - pauper?: string
+    - paupercommander?: string
+    - penny?: string
+    - pioneer?: string
+    - predh?: string
+    - premodern?: string
+    - standard?: string
+    - standardbrawl?: string
+    - timeless?: string
+    - vintage?: string
+- life?: string
+- loyalty?: string
+- manaCost?: string
+- manaValue: number
+- name: string
+- number: string
+- originalPrintings?: string[]
+- originalReleaseDate?: string
+- originalText?: string
+- originalType?: string
+- otherFaceIds?: string[]
+- power?: string
+- printings?: string[]
+- promoTypes?: string[]
+- purchaseUrls: {}
+    - cardKingdom?: string
+    - cardKingdomEtched?: string
+    - cardKingdomFoil?: string
+    - cardmarket?: string
+    - tcgplayer?: string
+    - tcgplayerEtched?: string
+- rarity: string
+- relatedCards?: {}
+    - reverseRelated?: string[]
+    - spellbook?: string[]
+- rebalancedPrintings?: string[]
+- rulings?: []
+    - date: string
+    - text: string
+- securityStamp?: string
+- setCode: string
+- side?: string
+- signature?: string
+- sourceProducts?: {}
+    - etched: string[];
+    - foil: string[];
+    - nonfoil: string[];
+- subsets?: string[]
+- subtypes: string[]
+- supertypes: string[]
+- text?: string
+- toughness?: string
+- type: string
+- types: string[]
+- uuid: string
+- variations?: string[]
+- watermark?: string
