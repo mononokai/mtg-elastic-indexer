@@ -1,8 +1,13 @@
 import json
+import os
+from dotenv import load_dotenv
 from glob import glob
 from elasticsearch import Elasticsearch
 
-client = Elasticsearch("http://localhost:9200")
+# load the environment variables
+load_dotenv()
+
+client = Elasticsearch("http://localhost:9200", api_key=os.getenv("ELASTIC_KEY"))
 
 filenames = glob("AllSetFiles/*.json")
 
@@ -50,8 +55,9 @@ def get_set_info(set_data):
     set_info.pop("booster", None)
     return set_info
 
-
+# function for filtering out unnecessary fields
 def filter_fields(data, fields_to_keep):
+    # if the data is a dictionary
     if isinstance(data, dict):
         return {
             key: (
@@ -67,9 +73,10 @@ def filter_fields(data, fields_to_keep):
     else:
         return data
 
-
+# function for indexing every card in a file
 def index_set(filename, index_name):
     print(f"Indexing {filename}...")
+
     with open(filename, "r", encoding="utf-8") as file:
         data = json.load(file)
 
@@ -100,6 +107,7 @@ def main():
         print(f'Index does not exist, creating index "{index_name}"')
         client.indices.create(index=index_name)
 
+    # iterate through files and ingest all of them
     for file in filenames:
         index_set(file, index_name)
 
