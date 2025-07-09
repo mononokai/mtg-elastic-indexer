@@ -4,13 +4,16 @@ from dotenv import load_dotenv
 from glob import glob
 from elasticsearch import Elasticsearch
 
-# load the environment variables
+# Load the environment variables from .env file
 load_dotenv()
 
+# Connect to local Elasticsearch instance using API key authentication
 client = Elasticsearch("http://localhost:9200", api_key=os.getenv("ELASTIC_KEY"))
 
+# Grab all JSON files in the "AllSetFiles" directory
 filenames = glob("AllSetFiles/*.json")
 
+# Specify which fields should be included from each card/token document
 fields_to_keep = {
     "borderColor": None,
     "cardParts": None,
@@ -47,7 +50,7 @@ fields_to_keep = {
     "uuid": None,
 }
 
-
+# Grabs set-level info from the JSON file, removing card, token and booster data
 def get_set_info(set_data):
     set_info = set_data.copy()
     set_info.pop("cards", None)
@@ -55,9 +58,8 @@ def get_set_info(set_data):
     set_info.pop("booster", None)
     return set_info
 
-# function for filtering out unnecessary fields
+# Recursively filter the data to keep only the fields defined in fields_to_keep
 def filter_fields(data, fields_to_keep):
-    # if the data is a dictionary
     if isinstance(data, dict):
         return {
             key: (
@@ -73,46 +75,46 @@ def filter_fields(data, fields_to_keep):
     else:
         return data
 
-# function for indexing every card in a file
+# Ingest cards and tokens from a single file into ELasticsearch
 def index_set(filename, index_name):
     print(f"Indexing {filename}...")
 
     with open(filename, "r", encoding="utf-8") as file:
         data = json.load(file)
 
-    # set info
+    # Grab metadata about the set
     set_info = get_set_info(data["data"])
 
-    # ingest cards
+    # Index each card document into Elasticsearch
     for card in data["data"].get("cards", []):
         document = filter_fields(card, fields_to_keep)
         document["set_info"] = set_info
         client.index(index=index_name, document=document)
 
-    # ingest tokens
+    # Index each token document into Elasticsearch
     for token in data["data"].get("tokens", []):
         document = filter_fields(token, fields_to_keep)
         document["set_info"] = set_info
         client.index(index=index_name, document=document)
 
 
+# Main entry point
 def main():
     filename = "AllSetFiles/AMH1.json"
     index_name = "mtg_cards"
 
-    # ? Does this check really need to be here?
-    # check if index exists
+    # Create index if it doesn't already exist
     if not client.indices.exists(index=index_name):
-        # if not, create index
         print(f'Index does not exist, creating index "{index_name}"')
         client.indices.create(index=index_name)
 
-    # iterate through files and ingest all of them
+    # Process and index every set file found
     for file in filenames:
         index_set(file, index_name)
 
     print("Done!")
 
 
+# Run the main function
 if __name__ == "__main__":
     main()
