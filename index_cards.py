@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from glob import glob
 from elasticsearch import Elasticsearch
+from tqdm import tqdm
 
 # Load the environment variables from .env file
 load_dotenv()
@@ -50,6 +51,7 @@ fields_to_keep = {
     "uuid": None,
 }
 
+
 # Grabs set-level info from the JSON file, removing card, token and booster data
 def get_set_info(set_data):
     set_info = set_data.copy()
@@ -57,6 +59,7 @@ def get_set_info(set_data):
     set_info.pop("tokens", None)
     set_info.pop("booster", None)
     return set_info
+
 
 # Recursively filter the data to keep only the fields defined in fields_to_keep
 def filter_fields(data, fields_to_keep):
@@ -75,9 +78,10 @@ def filter_fields(data, fields_to_keep):
     else:
         return data
 
+
 # Ingest cards and tokens from a single file into ELasticsearch
 def index_set(filename, index_name):
-    print(f"Indexing {filename}...")
+    tqdm.write(f"📄 Indexing {filename}...")
 
     with open(filename, "r", encoding="utf-8") as file:
         data = json.load(file)
@@ -85,17 +89,39 @@ def index_set(filename, index_name):
     # Grab metadata about the set
     set_info = get_set_info(data["data"])
 
+    success_count = 0
+    fail_count = 0
+
     # Index each card document into Elasticsearch
-    for card in data["data"].get("cards", []):
-        document = filter_fields(card, fields_to_keep)
-        document["set_info"] = set_info
-        client.index(index=index_name, document=document)
+    cards = data["data"].get("cards", [])
+    if cards:
+        for card in tqdm(cards, desc="  🃏 Cards", leave=True, ncols=60):
+            try:
+                document = filter_fields(card, fields_to_keep)
+                document["set_info"] = set_info
+                client.index(index=index_name, document=document)
+                success_count += 1
+            except Exception:
+                fail_count += 1
+    else:
+        tqdm.write("🃏 Cards: none")
 
     # Index each token document into Elasticsearch
-    for token in data["data"].get("tokens", []):
-        document = filter_fields(token, fields_to_keep)
-        document["set_info"] = set_info
-        client.index(index=index_name, document=document)
+    tokens = data["data"].get("tokens", [])
+    if tokens:
+        for token in tqdm(tokens, desc ="  🪙 Tokens", leave=True, ncols=60):
+            try:
+                document = filter_fields(token, fields_to_keep)
+                document["set_info"] = set_info
+                client.index(index=index_name, document=document)
+                success_count += 1
+            except Exception:
+                fail_count += 1
+    else:
+        tqdm.write("🪙 Tokens: none")
+
+    tqdm.write(f"✅ {filename}: {success_count} indexed, {fail_count} failed.")
+    return success_count, fail_count
 
 
 # Main entry point
@@ -105,14 +131,19 @@ def main():
 
     # Create index if it doesn't already exist
     if not client.indices.exists(index=index_name):
-        print(f'Index does not exist, creating index "{index_name}"')
+        tqdm.write(f'📦 Index "{index_name}" does not exist. Creating it...')
         client.indices.create(index=index_name)
 
-    # Process and index every set file found
-    for file in filenames:
-        index_set(file, index_name)
+    total_success = 0
+    total_fail = 0
 
-    print("Done!")
+    # Index all files with progress tracking
+    for file in tqdm(filenames, desc="📁 Processing set files"):
+        success, fail = index_set(file, index_name)
+        total_success += success
+        total_fail += fail
+
+    tqdm.write("🎉 Ingestion complete! {total_success} documents indexed, {total_fail} failed.")
 
 
 # Run the main function
