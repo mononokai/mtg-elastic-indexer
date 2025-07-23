@@ -114,9 +114,9 @@ def filter_fields(data, fields_to_keep):
     
 
 # Check if cache file exits, create it if not
-def check_for_cache():
-    if os.path.isfile("image_cache.json"):
-        with open("image_cache.json") as cache_file:
+def check_for_cache(image_cache_filename):
+    if os.path.isfile(f"{image_cache_filename}"):
+        with open(f"{image_cache_filename}") as cache_file:
             data = json.load(cache_file)
             return data
     else:
@@ -124,18 +124,25 @@ def check_for_cache():
 
 
 # Get image URL, cache if needed
-def get_or_fetch_image_url(scryfallId, image_urls):
-    if scryfallId not in image_urls:
+def get_or_fetch_image_url(scryfallId, cache_dict):
+    if scryfallId not in cache_dict:
         try:
             response = requests.get(f"https://api.scryfall.com/cards/{scryfallId}", headers=HEADERS)
             response.raise_for_status()
             data = response.json()
-            image_urls[scryfallId] = data["image_uris"]["normal"]
+            cache_dict[scryfallId] = data["image_uris"]["normal"]
         except requests.exceptions.RequestException as e:
             print(f"Error fetching image for {scryfallId}: {e}")
             return None
     
-    return image_urls[scryfallId]
+    return cache_dict[scryfallId]
+
+
+# Write image URL cache to file
+def save_cache(image_cache_filename, cache_dict):
+    with open(f"{image_cache_filename}", "w") as f:
+        json.dump(cache_dict, f, indent=2)
+        tqdm.write("💾 Image cache saved.")
 
 
 # Ingest cards and tokens from a single file into ELasticsearch
@@ -196,7 +203,8 @@ def index_set(filename, index_name, image_cache):
 # Main entry point
 def main():
     index_name = "mtg_cards"
-    image_cache = check_for_cache()
+    image_cache_name = "image_cache.json"
+    image_cache = check_for_cache(image_cache_name)
 
     # Create index if it doesn't already exist
     if not client.indices.exists(index=index_name):
@@ -211,6 +219,9 @@ def main():
         success, fail = index_set(file, index_name, image_cache)
         total_success += success
         total_fail += fail
+    
+    # Save the image cache to file
+    save_cache(image_cache_name, image_cache)
 
     tqdm.write("🎉 Ingestion complete! {total_success} documents indexed, {total_fail} failed.")
 
