@@ -4,6 +4,7 @@ import aiohttp
 import asyncio
 from glob import glob
 from tqdm import tqdm
+from datetime import datetime
 
 # User-Agent string for Scryfall API calls (per their API etiquette guidelines)
 HEADERS = {
@@ -64,12 +65,16 @@ async def fetch_image_url(scryfall_id, session, semaphore):
                     if "image_uris" in front_face:
                         image_url = front_face["image_uris"]["normal"]
                     else:
-                        tqdm.write(
-                            f"❌ No image_uris in card_faces for ID: {scryfall_id}"
-                        )
+                        msg = f"No image_uris in card_faces for ID: {scryfall_id}"
+                        tqdm.write(f"❌ {msg}")
+                        with open("missing_image_uris.log", "a") as log_file:
+                            log_file.write(f"[{datetime.now().isoformat()}] {msg}\n")
                         return (scryfall_id, None)
                 else:
-                    tqdm.write(f"❌ No image_uris found for ID: {scryfall_id}")
+                    msg = f"No image_uris found for ID: {scryfall_id}"
+                    tqdm.write(f"❌ {msg}")
+                    with open("missing_image_uris.log", "a") as log_file:
+                        log_file.write(f"[{datetime.now().isoformat()}] {msg}\n")
                     return (scryfall_id, None)
 
                 return (scryfall_id, image_url)

@@ -2,3 +2,4 @@ AllSetFiles/
 testing.py
 .env
 image_cache.json
+__pycache__/
