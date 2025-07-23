@@ -1,5 +1,6 @@
 import json
 import os
+import requests
 from dotenv import load_dotenv
 from glob import glob
 from elasticsearch import Elasticsearch
@@ -10,6 +11,12 @@ load_dotenv()
 
 # Connect to local Elasticsearch instance using API key authentication
 client = Elasticsearch("http://localhost:9200", api_key=os.getenv("ELASTIC_KEY"))
+
+# User-Agent string for Scryfall API calls
+HEADERS = {
+    "User-Agent": "MTG-Elastic-Indexer (contact: leachda12@proton.me)",
+    "Accept": "application/json"
+}
 
 # Grab all JSON files in the "AllSetFiles" directory
 filenames = glob("AllSetFiles/*.json")
@@ -104,6 +111,31 @@ def filter_fields(data, fields_to_keep):
         return [filter_fields(item, fields_to_keep) for item in data]
     else:
         return data
+    
+
+# Check if cache file exits, create it if not
+def check_for_cache():
+    if os.path.isfile("image_cache.json"):
+        with open("image_cache.json") as cache_file:
+            data = json.load(cache_file)
+            return data
+    else:
+        return {}
+
+
+# Get image URL, cache if needed
+def get_or_fetch_image_url(scryfallId, image_urls):
+    if scryfallId not in image_urls:
+        try:
+            response = requests.get(f"https://api.scryfall.com/cards/{scryfallId}", headers=HEADERS)
+            response.raise_for_status()
+            data = response.json()
+            image_urls[scryfallId] = data["image_uris"]["normal"]
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching image for {scryfallId}: {e}")
+            return None
+    
+    return image_urls[scryfallId]
 
 
 # Ingest cards and tokens from a single file into ELasticsearch
@@ -153,8 +185,8 @@ def index_set(filename, index_name):
 
 # Main entry point
 def main():
-    filename = "AllSetFiles/AMH1.json"
     index_name = "mtg_cards"
+    image_cache = check_for_cache()
 
     # Create index if it doesn't already exist
     if not client.indices.exists(index=index_name):
