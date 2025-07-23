@@ -15,7 +15,7 @@ client = Elasticsearch("http://localhost:9200", api_key=os.getenv("ELASTIC_KEY")
 # User-Agent string for Scryfall API calls
 HEADERS = {
     "User-Agent": "MTG-Elastic-Indexer (contact: leachda12@proton.me)",
-    "Accept": "application/json"
+    "Accept": "application/json",
 }
 
 # Grab all JSON files in the "AllSetFiles" directory
@@ -38,7 +38,7 @@ fields_to_keep = {
         "scryfallId": None,
         "scryfallOracleId": None,
         "tcgplayerProductId": None,
-        "tcgplayerEtchedProductId": None
+        "tcgplayerEtchedProductId": None,
     },
     "isFullArt": None,
     "isPromo": None,
@@ -50,11 +50,7 @@ fields_to_keep = {
     "isTextless": None,
     "keywords": None,
     "layout": None,
-    "leadershipSkills": {
-        "brawl": None,
-        "commander": None,
-        "oathbreaker": None
-    },
+    "leadershipSkills": {"brawl": None, "commander": None, "oathbreaker": None},
     "legalities": None,
     "life": None,
     "loyalty": None,
@@ -111,12 +107,12 @@ def filter_fields(data, fields_to_keep):
         return [filter_fields(item, fields_to_keep) for item in data]
     else:
         return data
-    
+
 
 # Check if cache file exits, create it if not
 def check_for_cache(image_cache_filename):
     if os.path.isfile(image_cache_filename):
-        with open(image_cache_filename) as cache_file:
+        with open(image_cache_filename, "r") as cache_file:
             data = json.load(cache_file)
             return data
     else:
@@ -127,14 +123,16 @@ def check_for_cache(image_cache_filename):
 def get_or_fetch_image_url(scryfallId, cache_dict):
     if scryfallId not in cache_dict:
         try:
-            response = requests.get(f"https://api.scryfall.com/cards/{scryfallId}", headers=HEADERS)
+            response = requests.get(
+                f"https://api.scryfall.com/cards/{scryfallId}", headers=HEADERS
+            )
             response.raise_for_status()
             data = response.json()
             cache_dict[scryfallId] = data["image_uris"]["normal"]
         except requests.exceptions.RequestException as e:
             print(f"Error fetching image for {scryfallId}: {e}")
             return None
-    
+
     return cache_dict[scryfallId]
 
 
@@ -180,7 +178,7 @@ def index_set(filename, index_name, image_cache):
     # Index each token document into Elasticsearch
     tokens = data["data"].get("tokens", [])
     if tokens:
-        for token in tqdm(tokens, desc ="  🪙 Tokens", leave=True, ncols=60):
+        for token in tqdm(tokens, desc="  🪙 Tokens", leave=True, ncols=60):
             try:
                 document = filter_fields(token, fields_to_keep)
                 scryfall_id = document.get("identifiers", {}).get("scryfallId")
@@ -219,11 +217,13 @@ def main():
         success, fail = index_set(file, index_name, image_cache)
         total_success += success
         total_fail += fail
-    
+
     # Save the image cache to file
     save_cache(image_cache_name, image_cache)
 
-    tqdm.write(f"🎉 Ingestion complete! {total_success} documents indexed, {total_fail} failed.")
+    tqdm.write(
+        f"🎉 Ingestion complete! {total_success} documents indexed, {total_fail} failed."
+    )
 
 
 # Run the main function
