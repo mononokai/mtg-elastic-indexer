@@ -83,20 +83,26 @@ async def fetch_image_url(scryfall_id, session, semaphore):
                 tqdm.write(f"🚫 Rate limit hit for {scryfall_id}. Backing off.")
                 await asyncio.sleep(5)  # Crude backoff
             else:
-                tqdm.write(f"⚠️ Error fetching image for {scryfall_id}: {e}")
+                msg = f"{e.status} {e.request_info.method} {e.request_info.url} — {scryfall_id}"
+                tqdm.write(f"⚠️ {msg}")
+                with open("fetch_errors.log", "a") as log_file:
+                    log_file.write(f"[{datetime.now().isoformat()}] {msg}\n")
 
         return (scryfall_id, None)
 
 
 # Asynchronously fetch all missing image URLs and update the cache
 async def fetch_all_images(remaining_ids, image_cache, image_cache_name):
-    tasks = []
+    # Clear log files
+    open("fetch_errors.log", "w").close()
+    open("missing_image_uris.log", "w").close()
 
     # Limit concurrency and request timeout
     connector = aiohttp.TCPConnector(limit=5)
     timeout = aiohttp.ClientTimeout(total=60)
     semaphore = asyncio.Semaphore(1)  # Allow only 1 request at a time to avoid 429s
 
+    tasks = []
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
         for scryfall_id in tqdm(
             remaining_ids, desc="🌐 Fetching new image URLs", leave=True, ncols=80

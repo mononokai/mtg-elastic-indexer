@@ -3,3 +3,5 @@ testing.py
 .env
 image_cache.json
 __pycache__/
+missing_image_uris.log
+fetch_errors.log
