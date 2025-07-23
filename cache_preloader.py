@@ -5,17 +5,14 @@ import asyncio
 from glob import glob
 from tqdm import tqdm
 
-# Grab all JSON files in the "AllSetFiles" directory
-filenames = glob("AllSetFiles/*.json")
-
-# User-Agent string for Scryfall API calls
+# User-Agent string for Scryfall API calls (per their API etiquette guidelines)
 HEADERS = {
     "User-Agent": "MTG-Elastic-Indexer (contact: leachda12@proton.me)",
     "Accept": "application/json",
 }
 
 
-# Collect all unique Scryfall IDs from a file
+# Collect all unique Scryfall IDs from an MTGJSON set file
 def cache_ids(filename):
     unique_ids = set()
 
@@ -23,28 +20,17 @@ def cache_ids(filename):
     with open(filename, "r", encoding="utf-8") as file:
         data = json.load(file)
 
-    # Collect all unique Scryfall IDs from cards
-    cards = data["data"].get("cards", [])
-    if cards:
-        for card in cards:
-            identifiers = card.get("identifiers", {})
-            scryfall_id = identifiers.get("scryfallId")
-            if scryfall_id:
-                unique_ids.add(scryfall_id)
-
-    # Collect all unique Scryfall IDs from tokens
-    tokens = data["data"].get("tokens", [])
-    if tokens:
-        for token in tokens:
-            identifiers = token.get("identifiers", {})
-            scryfall_id = identifiers.get("scryfallId")
+    # Collect all unique Scryfall IDs from cards and tokens
+    for card_type in ("cards", "tokens"):
+        for item in data["data"].get(card_type, []):
+            scryfall_id = item.get("identifiers", {}).get("scryfallId")
             if scryfall_id:
                 unique_ids.add(scryfall_id)
 
     return unique_ids
 
 
-# Load existing cache if it exists
+# Load existing image URL cache if it exists
 def load_existing_cache(filename):
     if os.path.isfile(filename):
         with open(filename, "r") as f:
@@ -60,6 +46,7 @@ def save_cache(image_cache_filename, image_cache):
         tqdm.write("💾 Image cache saved.")
 
 
+# Asynchronously fetch the image URL for a Scryfall ID with rate limiting
 async def fetch_image_url(scryfall_id, session, semaphore):
     async with semaphore:
         try:
@@ -69,6 +56,7 @@ async def fetch_image_url(scryfall_id, session, semaphore):
                 response.raise_for_status()
                 data = await response.json()
 
+                # Handle single-faced vs double-faced cards
                 if "image_uris" in data:
                     image_url = data["image_uris"]["normal"]
                 elif "card_faces" in data and isinstance(data["card_faces"], list):
@@ -88,25 +76,28 @@ async def fetch_image_url(scryfall_id, session, semaphore):
         except aiohttp.ClientResponseError as e:
             if e.status == 429:
                 tqdm.write(f"🚫 Rate limit hit for {scryfall_id}. Backing off.")
-                await asyncio.sleep(5)
+                await asyncio.sleep(5)  # Crude backoff
             else:
                 tqdm.write(f"⚠️ Error fetching image for {scryfall_id}: {e}")
 
+        return (scryfall_id, None)
 
+
+# Asynchronously fetch all missing image URLs and update the cache
 async def fetch_all_images(remaining_ids, image_cache, image_cache_name):
     tasks = []
 
+    # Limit concurrency and request timeout
     connector = aiohttp.TCPConnector(limit=5)
     timeout = aiohttp.ClientTimeout(total=60)
-    semaphore = asyncio.Semaphore(1)  # Allow only 1 request at a time
+    semaphore = asyncio.Semaphore(1)  # Allow only 1 request at a time to avoid 429s
 
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
         for scryfall_id in tqdm(
             remaining_ids, desc="🌐 Fetching new image URLs", leave=True, ncols=80
         ):
-            if scryfall_id not in image_cache:
-                task = fetch_image_url(scryfall_id, session, semaphore)
-                tasks.append(task)
+            task = fetch_image_url(scryfall_id, session, semaphore)
+            tasks.append(task)
 
         for i, completed_task in enumerate(
             tqdm(
@@ -123,7 +114,7 @@ async def fetch_all_images(remaining_ids, image_cache, image_cache_name):
             if image_url:
                 image_cache[scryfall_id] = image_url
 
-            await asyncio.sleep(0.11)
+            await asyncio.sleep(0.11)  # Keep requests under 10/sec (Scryfall's limit)
 
             if i % 100 == 0 and i != 0:
                 save_cache(image_cache_name, image_cache)
@@ -134,15 +125,16 @@ def main():
     all_ids = set()
     image_cache = load_existing_cache(image_cache_name)
     tqdm.write(f"💾 Loaded {len(image_cache)} pre-cached image URLs.")
-    remaining_ids = []
 
     # Collect unique Scryfall IDs from all sets
+    filenames = glob("AllSetFiles/*.json")  # All set files
     for file in tqdm(filenames, desc="🔍 Scanning set files", leave=True, ncols=90):
         set_ids = cache_ids(file)
         all_ids.update(set_ids)
     tqdm.write(f"📦 Total unique Scryfall IDs collected: {len(all_ids)}")
 
     # Filter out IDs with images already cached
+    remaining_ids = []
     for id_ in all_ids:
         if id_ not in image_cache:
             remaining_ids.append(id_)
