@@ -115,8 +115,8 @@ def filter_fields(data, fields_to_keep):
 
 # Check if cache file exits, create it if not
 def check_for_cache(image_cache_filename):
-    if os.path.isfile(f"{image_cache_filename}"):
-        with open(f"{image_cache_filename}") as cache_file:
+    if os.path.isfile(image_cache_filename):
+        with open(image_cache_filename) as cache_file:
             data = json.load(cache_file)
             return data
     else:
@@ -140,7 +140,7 @@ def get_or_fetch_image_url(scryfallId, cache_dict):
 
 # Write image URL cache to file
 def save_cache(image_cache_filename, cache_dict):
-    with open(f"{image_cache_filename}", "w") as f:
+    with open(image_cache_filename, "w") as f:
         json.dump(cache_dict, f, indent=2)
         tqdm.write("💾 Image cache saved.")
 
@@ -223,7 +223,7 @@ def main():
     # Save the image cache to file
     save_cache(image_cache_name, image_cache)
 
-    tqdm.write("🎉 Ingestion complete! {total_success} documents indexed, {total_fail} failed.")
+    tqdm.write(f"🎉 Ingestion complete! {total_success} documents indexed, {total_fail} failed.")
 
 
 # Run the main function
