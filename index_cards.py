@@ -139,7 +139,7 @@ def get_or_fetch_image_url(scryfallId, image_urls):
 
 
 # Ingest cards and tokens from a single file into ELasticsearch
-def index_set(filename, index_name):
+def index_set(filename, index_name, image_cache):
     tqdm.write(f"📄 Indexing {filename}...")
 
     with open(filename, "r", encoding="utf-8") as file:
@@ -157,6 +157,11 @@ def index_set(filename, index_name):
         for card in tqdm(cards, desc="  🃏 Cards", leave=True, ncols=60):
             try:
                 document = filter_fields(card, fields_to_keep)
+                scryfall_id = document.get("identifiers", {}).get("scryfallId")
+                if scryfall_id:
+                    image_url = get_or_fetch_image_url(scryfall_id, image_cache)
+                    if image_url:
+                        document["imageUrl"] = image_url
                 document["set_info"] = set_info
                 client.index(index=index_name, document=document)
                 success_count += 1
@@ -171,6 +176,11 @@ def index_set(filename, index_name):
         for token in tqdm(tokens, desc ="  🪙 Tokens", leave=True, ncols=60):
             try:
                 document = filter_fields(token, fields_to_keep)
+                scryfall_id = document.get("identifiers", {}).get("scryfallId")
+                if scryfall_id:
+                    image_url = get_or_fetch_image_url(scryfall_id, image_cache)
+                    if image_url:
+                        document["imageUrl"] = image_url
                 document["set_info"] = set_info
                 client.index(index=index_name, document=document)
                 success_count += 1
@@ -198,7 +208,7 @@ def main():
 
     # Index all files with progress tracking
     for file in tqdm(filenames, desc="📁 Processing set files"):
-        success, fail = index_set(file, index_name)
+        success, fail = index_set(file, index_name, image_cache)
         total_success += success
         total_fail += fail
 
