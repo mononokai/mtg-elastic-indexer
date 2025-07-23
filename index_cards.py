@@ -120,46 +120,44 @@ def index_set(filename, index_name, image_cache):
     # Grab metadata about the set
     set_info = get_set_info(data["data"])
 
+    bulk_operations = []
     success_count = 0
     fail_count = 0
 
-    # Index each card document into Elasticsearch
     cards = data["data"].get("cards", [])
-    if cards:
-        for card in tqdm(cards, desc="  🃏 Cards", leave=True, ncols=60):
-            try:
-                document = filter_fields(card, CARD_FIELDS_TO_KEEP)
-                scryfall_id = document.get("identifiers", {}).get("scryfallId")
-                if scryfall_id:
-                    image_url = image_cache.get(scryfall_id)
-                    if image_url:
-                        document["imageUrl"] = image_url
-                document["set_info"] = set_info
-                client.index(index=index_name, document=document)
-                success_count += 1
-            except Exception:
-                fail_count += 1
-    else:
-        tqdm.write("🃏 Cards: none")
-
-    # Index each token document into Elasticsearch
     tokens = data["data"].get("tokens", [])
-    if tokens:
-        for token in tqdm(tokens, desc="  🪙 Tokens", leave=True, ncols=60):
+    # Index all card and token documents into Elasticsearch
+    for doc_type, items in [("🃏 Cards", cards), ("🪙 Tokens", tokens)]:
+        for item in tqdm(items, desc=f"  {doc_type}", leave=True, ncols=60):
             try:
-                document = filter_fields(token, CARD_FIELDS_TO_KEEP)
+                document = filter_fields(item, CARD_FIELDS_TO_KEEP)
                 scryfall_id = document.get("identifiers", {}).get("scryfallId")
                 if scryfall_id:
                     image_url = image_cache.get(scryfall_id)
                     if image_url:
                         document["imageUrl"] = image_url
                 document["set_info"] = set_info
-                client.index(index=index_name, document=document)
+                bulk_operations.append({"index": {"_index": index_name}})
+                bulk_operations.append(document)
                 success_count += 1
             except Exception:
                 fail_count += 1
-    else:
-        tqdm.write("🪙 Tokens: none")
+
+    if bulk_operations:
+        response = client.bulk(
+            operations=bulk_operations, params={"require_alias": False}
+        )
+        if response.get("errors"):
+            for item in response["items"]:
+                index_result = item.get("index", {})
+                if "error" in index_result:
+                    fail_count += 1
+                    success_count -= 1
+                    error_info = index_result["error"]
+                    doc_id = index_result.get("_id", "<no_id>")
+                    tqdm.write(
+                        f"❌ Error indexing doc {doc_id}: {error_info.get('type')} - {error_info.get('reason')}"
+                    )
 
     tqdm.write(f"✅ {filename}: {success_count} indexed, {fail_count} failed.")
     return success_count, fail_count
@@ -181,7 +179,7 @@ def main():
 
     # Index all files with progress tracking
     # Grab all JSON files in the "AllSetFiles" directory
-    filenames = glob("AllSetFiles/*.json") # All set files
+    filenames = glob("AllSetFiles/*.json")  # All set files
     for file in tqdm(filenames, desc="📁 Processing set files"):
         success, fail = index_set(file, index_name, image_cache)
         total_success += success
