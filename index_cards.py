@@ -1,6 +1,5 @@
 import json
 import os
-import requests
 from dotenv import load_dotenv
 from glob import glob
 from elasticsearch import Elasticsearch
@@ -12,17 +11,9 @@ load_dotenv()
 # Connect to local Elasticsearch instance using API key authentication
 client = Elasticsearch("http://localhost:9200", api_key=os.getenv("ELASTIC_KEY"))
 
-# User-Agent string for Scryfall API calls
-HEADERS = {
-    "User-Agent": "MTG-Elastic-Indexer (contact: leachda12@proton.me)",
-    "Accept": "application/json",
-}
-
-# Grab all JSON files in the "AllSetFiles" directory
-filenames = glob("AllSetFiles/*.json")
 
 # Specify which fields should be included from each card/token document
-fields_to_keep = {
+CARD_FIELDS_TO_KEEP = {
     "artist": None,
     "artistIds": None,
     "cardParts": None,
@@ -109,38 +100,14 @@ def filter_fields(data, fields_to_keep):
         return data
 
 
-# Check if cache file exits, create it if not
-def check_for_cache(image_cache_filename):
-    if os.path.isfile(image_cache_filename):
-        with open(image_cache_filename, "r") as cache_file:
-            data = json.load(cache_file)
-            return data
+# Load pre-cached image URL file
+def load_cache(filename):
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            return json.load(f)
     else:
+        tqdm.write("⚠️ No image cache file found!")
         return {}
-
-
-# Get image URL, cache if needed
-def get_or_fetch_image_url(scryfallId, cache_dict):
-    if scryfallId not in cache_dict:
-        try:
-            response = requests.get(
-                f"https://api.scryfall.com/cards/{scryfallId}", headers=HEADERS
-            )
-            response.raise_for_status()
-            data = response.json()
-            cache_dict[scryfallId] = data["image_uris"]["normal"]
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching image for {scryfallId}: {e}")
-            return None
-
-    return cache_dict[scryfallId]
-
-
-# Write image URL cache to file
-def save_cache(image_cache_filename, cache_dict):
-    with open(image_cache_filename, "w") as f:
-        json.dump(cache_dict, f, indent=2)
-        tqdm.write("💾 Image cache saved.")
 
 
 # Ingest cards and tokens from a single file into ELasticsearch
@@ -161,10 +128,10 @@ def index_set(filename, index_name, image_cache):
     if cards:
         for card in tqdm(cards, desc="  🃏 Cards", leave=True, ncols=60):
             try:
-                document = filter_fields(card, fields_to_keep)
+                document = filter_fields(card, CARD_FIELDS_TO_KEEP)
                 scryfall_id = document.get("identifiers", {}).get("scryfallId")
                 if scryfall_id:
-                    image_url = get_or_fetch_image_url(scryfall_id, image_cache)
+                    image_url = image_cache.get(scryfall_id)
                     if image_url:
                         document["imageUrl"] = image_url
                 document["set_info"] = set_info
@@ -180,10 +147,10 @@ def index_set(filename, index_name, image_cache):
     if tokens:
         for token in tqdm(tokens, desc="  🪙 Tokens", leave=True, ncols=60):
             try:
-                document = filter_fields(token, fields_to_keep)
+                document = filter_fields(token, CARD_FIELDS_TO_KEEP)
                 scryfall_id = document.get("identifiers", {}).get("scryfallId")
                 if scryfall_id:
-                    image_url = get_or_fetch_image_url(scryfall_id, image_cache)
+                    image_url = image_cache.get(scryfall_id)
                     if image_url:
                         document["imageUrl"] = image_url
                 document["set_info"] = set_info
@@ -202,7 +169,7 @@ def index_set(filename, index_name, image_cache):
 def main():
     index_name = "mtg_cards"
     image_cache_name = "image_cache.json"
-    image_cache = check_for_cache(image_cache_name)
+    image_cache = load_cache(image_cache_name)
 
     # Create index if it doesn't already exist
     if not client.indices.exists(index=index_name):
@@ -213,13 +180,12 @@ def main():
     total_fail = 0
 
     # Index all files with progress tracking
+    # Grab all JSON files in the "AllSetFiles" directory
+    filenames = glob("AllSetFiles/*.json") # All set files
     for file in tqdm(filenames, desc="📁 Processing set files"):
         success, fail = index_set(file, index_name, image_cache)
         total_success += success
         total_fail += fail
-
-    # Save the image cache to file
-    save_cache(image_cache_name, image_cache)
 
     tqdm.write(
         f"🎉 Ingestion complete! {total_success} documents indexed, {total_fail} failed."
