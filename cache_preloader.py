@@ -35,10 +35,26 @@ def cache_ids(filename):
     return unique_ids
 
 
+# Load existing cache if it exists
+def load_existing_cache(filename):
+    if os.path.isfile(filename):
+        with open(filename, "r") as f:
+            return json.load(f)
+    
+    return {}
+
 
 def main():
     image_cache_name = "image_cache.json"
     all_ids = set()
+    image_cache = load_existing_cache(image_cache_name)
+    tqdm.write(f"🔍 Loaded {len(image_cache)} pre-cached image URLs.")
+    remaining_ids = []
+
+    for id_ in all_ids:
+        if id_ not in image_cache:
+            remaining_ids.append(id_)
+    tqdm.write(f"📦 {len(remaining_ids)} Scryfall IDs to fetch.")
 
     for file in filenames:
         tqdm.write(f"🔍 Processing file: {file}")
