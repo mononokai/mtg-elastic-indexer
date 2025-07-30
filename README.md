@@ -7,6 +7,7 @@ This script indexes Magic: The Gathering card and token data into a local Elasti
 
 - Downloads and parses Scryfall's bulk `default_cards` data
 - Caches card image URLs for faster indexing
+- Downloads and extracts MTGJSON AllSetFiles data
 - Parses and filters MTGJSON AllSetFiles data
 - Attaches set metadata to each document
 - Indexes cards and tokens into Elasticsearch
@@ -21,23 +22,21 @@ This script indexes Magic: The Gathering card and token data into a local Elasti
    git clone https://github.com/mononokai/mtg-elastic-indexer.git
    cd mtg-elastic-indexer
    ```
-2. **Download [AllSetFiles](https://mtgjson.com/downloads/all-files/) from MTGJSON**
-    → Extract the contents into the root of this repo (where index_cards.py is)
-3. **Start a local Elasticsearch instance**
+2. **Start a local Elasticsearch instance**
     → ([Elastic Docs: Run Elasticsearch Locally](https://www.elastic.co/docs/solutions/search/run-elasticsearch-locally))
-4. **If you don't have your Elasticsearch API key, create a new one**
+3. **If you don't have your Elasticsearch API key, create a new one**
     → ([Elastic Docs: Create an API Key](https://www.elastic.co/docs/deploy-manage/api-keys/elasticsearch-api-keys#create-api-key))
-5. **Create a `.env` file in the root directory which your API key:**
+4. **Create a `.env` file in the root directory which your API key:**
    ```env
    ELASTIC_KEY="your_api_key_here"
    ```
-6. **Make sure you have Python 3.8+ installed**
-7. **Install dependencies:** 
+5. **Make sure you have Python 3.8+ installed**
+6. **Install dependencies:** 
    ```bash
    pip install -r requirements.txt
    ```
-8. **Run the indexer script:** 
+7. **Run the indexer script:** 
    ```bash
    python mtg_indexer.py
    ```
-9.  Done! Your MTG cards should now be indexed into Elasticsearch under the default index name `mtg_cards`
+8.  Done! Your MTG cards should now be indexed into Elasticsearch under the default index name `mtg_cards`

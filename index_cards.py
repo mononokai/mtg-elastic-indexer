@@ -76,8 +76,8 @@ CARD_FIELDS_TO_KEEP = {
 }
 
 
-# Grabs set-level info from the JSON file, removing card, token and booster data
 def get_set_info(set_data):
+    """Grabs set-level info from the JSON file, removing card, token and booster data"""
     set_info = set_data.copy()
     set_info.pop("cards", None)
     set_info.pop("tokens", None)
@@ -85,8 +85,8 @@ def get_set_info(set_data):
     return set_info
 
 
-# Recursively filter the data to keep only the fields defined in fields_to_keep
 def filter_fields(data, fields_to_keep):
+    """Recursively filters the data to keep only the fields defined in fields_to_keep"""
     if isinstance(data, dict):
         return {
             key: (
@@ -103,8 +103,8 @@ def filter_fields(data, fields_to_keep):
         return data
 
 
-# Load pre-cached image URL file
 def load_cache(filename):
+    """Loads pre-cached image URL file"""
     if os.path.exists(filename):
         with open(filename, "r") as f:
             return json.load(f)
@@ -113,8 +113,8 @@ def load_cache(filename):
         return {}
 
 
-# Ingest cards and tokens from a single file into ELasticsearch
 def index_set(filename, index_name, image_cache):
+    """Ingest cards and tokens from a single file into ELasticsearch"""
     tqdm.write(f"📄 Indexing {filename}...")
 
     with open(filename, "r", encoding="utf-8") as file:
@@ -168,13 +168,10 @@ def index_set(filename, index_name, image_cache):
     return success_count, fail_count
 
 
-# Main entry point
 def main():
     index_name = "mtg_cards"
     image_cache_name = "image_cache.json"
     image_cache = load_cache(image_cache_name)
-
-    download_mtgjson_all_sets()
 
     # Create index if it doesn't already exist
     if not client.indices.exists(index=index_name):

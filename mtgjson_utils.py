@@ -5,8 +5,8 @@ import zipfile
 from tqdm import tqdm
 
 
-# Downloads and extracts MTGJSON AllSetFiles.zip then cleans up afterwards
 def download_and_extract_zip(url, zip_filename, extract_dir):
+    """Downloads and extracts MTGJSON AllSetFiles.zip then cleans up afterwards"""
     tqdm.write("⬇️  Downloading AllSetFiles.zip from MTGJSON...")
     response = requests.get(url, stream=True)
     response.raise_for_status()

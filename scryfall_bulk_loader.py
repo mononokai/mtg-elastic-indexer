@@ -20,8 +20,8 @@ HEADERS = {
 }
 
 
-# Retrieves the download URL for the "default_cards" bulk data file from Scryfall
 def fetch_default_cards_url():
+    """Retrieves the download URL for the "default_cards" bulk data file from Scryfall"""
     response = requests.get(url=BULK_LIST_URL, headers=HEADERS)
     data = response.json()
     bulk_data_types = data["data"]
@@ -32,8 +32,8 @@ def fetch_default_cards_url():
             return item["download_uri"]
 
 
-# Downloads the Scryfall bulk data JSON file and saves it
 def download_bulk_data(download_url):
+    """Downloads the Scryfall bulk data JSON file and saves it"""
     response = requests.get(url=download_url, headers=HEADERS, stream=True)
     response.raise_for_status()
 
@@ -44,8 +44,8 @@ def download_bulk_data(download_url):
     tqdm.write(f"📁 Bulk data saved to {LOCAL_FILENAME}")
 
 
-# Parses the bulk JSON file and extracts image URLs for all valid cards
 def build_image_cache():
+    """Parses the bulk JSON file and extracts image URLs for all valid cards"""
     image_cache = {}
 
     with open("scryfall_bulk.json", "r", encoding="utf-8") as f:
