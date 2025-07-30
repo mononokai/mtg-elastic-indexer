@@ -50,10 +50,10 @@ def build_image_cache():
 
     with open("scryfall_bulk.json", "r", encoding="utf-8") as f:
         cards = json.load(f)
-    
+
     for card in tqdm(cards, desc="🧱 Building image cache", leave=True, ncols=80):
         scryfall_id = card["id"]
-        if card.get("layout") == "art_series": # Skip art cards
+        if card.get("layout") == "art_series":  # Skip art cards
             continue
         if "image_uris" in card:
             image_url = card["image_uris"]["normal"]
@@ -76,9 +76,9 @@ def build_image_cache():
             with open("missing_image_uris.log", "a") as log_file:
                 log_file.write(f"[{datetime.now().isoformat()}] {msg}\n")
             continue
-        
+
         image_cache[scryfall_id] = image_url
-    
+
     return image_cache
 
 

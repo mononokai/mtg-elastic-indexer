@@ -1,12 +1,13 @@
 from scryfall_bulk_loader import main as run_bulk_loader
 from index_cards import main as run_indexing
 import time
-import tqdm
+from tqdm import tqdm
 
 
 def main():
     run_bulk_loader()
     run_indexing()
+
 
 if __name__ == "__main__":
     start_time = time.time()
