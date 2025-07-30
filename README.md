@@ -1,13 +1,15 @@
 # MTG Elasticsearch Indexer
-This script indexes Magic: The Gathering card and token data into a local Elasticsearch instance using the [MTGJSON](https://mtgjson.com) dataset. It uses `tqdm` to display progress and filters fields for efficient ingestion and searching.
+This script indexes Magic: The Gathering card and token data into a local Elasticsearch instance using the [MTGJSON](https://mtgjson.com) dataset and image URLs from [Scryfall](https://scryfall.com). It uses `tqdm` to display progress, filters fields for efficient ingestion and searching, and uses the Scryfall bulk data API for fast, reliable image caching.
 
 ---
 
 ## 📦 Features
 
+- Downloads and parses Scryfall's bulk `default_cards` data
+- Caches card image URLs for faster indexing
 - Parses and filters MTGJSON AllSetFiles data
-- Indexes cards and tokens into Elasticsearch
 - Attaches set metadata to each document
+- Indexes cards and tokens into Elasticsearch
 - Shows clean CLI progress bars using `tqdm`
 
 ---
@@ -36,6 +38,6 @@ This script indexes Magic: The Gathering card and token data into a local Elasti
    ```
 8. **Run the indexer script:** 
    ```bash
-   python index_cards.py
+   python mtg_indexer.py
    ```
 9.  Done! Your MTG cards should now be indexed into Elasticsearch under the default index name `mtg_cards`
