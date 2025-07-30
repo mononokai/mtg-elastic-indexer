@@ -1,3 +1,4 @@
+from mtgjson_utils import download_mtgjson_all_sets
 from scryfall_bulk_loader import main as run_bulk_loader
 from index_cards import main as run_indexing
 import time
@@ -5,6 +6,7 @@ from tqdm import tqdm
 
 
 def main():
+    download_mtgjson_all_sets()
     run_bulk_loader()
     run_indexing()
 

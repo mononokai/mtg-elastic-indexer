@@ -76,59 +76,6 @@ CARD_FIELDS_TO_KEEP = {
 }
 
 
-# Checks if the MTGJSON directory exists, prompts user if so to redownload and overwrite
-# Downloads and extracts normally otherwise
-def download_mtgjson_all_sets():
-    MTGJSON_ZIP_URL = "https://mtgjson.com/api/v5/AllSetFiles.zip"
-    MTGJSON_ZIP_FILENAME = "AllSetFiles.zip"
-    MTGJSON_EXTRACT_DIR = "AllSetFiles"
-
-    if os.path.exists("AllSetFiles"):
-        while True:
-            user_response = input(
-                "❗ AllSetFiles directory already exists. Redownload and overwrite? (y/N):"
-            )
-            if user_response.lower() == "y":
-                download_and_extract_zip(
-                    MTGJSON_ZIP_URL, MTGJSON_ZIP_FILENAME, MTGJSON_EXTRACT_DIR
-                )
-                break
-            elif user_response.lower() == "n":
-                print("✅ Skipping download.")
-                break
-            else:
-                print("⚠️ Please enter 'y' or 'n'.")
-    else:
-        download_and_extract_zip(
-            MTGJSON_ZIP_URL, MTGJSON_ZIP_FILENAME, MTGJSON_EXTRACT_DIR
-        )
-
-
-# Downloads and extracts MTGJSON AllSetFiles.zip then cleans up afterwards
-def download_and_extract_zip(url, zip_filename, extract_dir):
-    tqdm.write("⬇️  Downloading AllSetFiles.zip from MTGJSON...")
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
-
-    with open(zip_filename, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            f.write(chunk)
-    tqdm.write("✅ Download complete.")
-
-    # Delete old folder if it exists
-    if os.path.exists(extract_dir):
-        shutil.rmtree(extract_dir)
-
-    # Extract zip file
-    with zipfile.ZipFile(zip_filename, "R") as zip_ref:
-        zip_ref.extractall(extract_dir)
-    tqdm.write(f"🗂️ Extracted to {extract_dir}/.")
-
-    # Remove zip file
-    os.remove(zip_filename)
-    tqdm.write("🧹 Cleaned up zip file.")
-
-
 # Grabs set-level info from the JSON file, removing card, token and booster data
 def get_set_info(set_data):
     set_info = set_data.copy()
@@ -226,6 +173,8 @@ def main():
     index_name = "mtg_cards"
     image_cache_name = "image_cache.json"
     image_cache = load_cache(image_cache_name)
+
+    download_mtgjson_all_sets()
 
     # Create index if it doesn't already exist
     if not client.indices.exists(index=index_name):
