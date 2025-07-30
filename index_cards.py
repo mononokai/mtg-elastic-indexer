@@ -144,20 +144,22 @@ def index_set(filename, index_name, image_cache):
                 fail_count += 1
 
     if bulk_operations:
-        response = client.bulk(
-            operations=bulk_operations, params={"require_alias": False}
-        )
-        if response.get("errors"):
-            for item in response["items"]:
-                index_result = item.get("index", {})
-                if "error" in index_result:
-                    fail_count += 1
-                    success_count -= 1
-                    error_info = index_result["error"]
-                    doc_id = index_result.get("_id", "<no_id>")
-                    tqdm.write(
-                        f"❌ Error indexing doc {doc_id}: {error_info.get('type')} - {error_info.get('reason')}"
-                    )
+        for i in range(0, len(bulk_operations), 2000):
+            chunk = bulk_operations[i:i + 2000]
+            response = client.bulk(
+                operations=chunk, params={"require_alias": False}
+            )
+            if response.get("errors"):
+                for item in response["items"]:
+                    index_result = item.get("index", {})
+                    if "error" in index_result:
+                        fail_count += 1
+                        success_count -= 1
+                        error_info = index_result["error"]
+                        doc_id = index_result.get("_id", "<no_id>")
+                        tqdm.write(
+                            f"❌ Error indexing doc {doc_id}: {error_info.get('type')} - {error_info.get('reason')}"
+                        )
 
     tqdm.write(f"✅ {filename}: {success_count} indexed, {fail_count} failed.")
     return success_count, fail_count
