@@ -91,11 +91,43 @@ async def fetch_image_url(scryfall_id, session, semaphore):
         return (scryfall_id, None)
 
 
+# Retry failed Scryfall image fetches once and log any that still fail
+async def retry_failed_fetches(failed_ids, image_cache, session, semaphore):
+    if not failed_ids:
+        return
+
+    await asyncio.sleep(2) # Brief pause before retry
+
+    retry_tasks = []
+    for scryfall_id in failed_ids:
+        task = fetch_image_url(scryfall_id, session, semaphore)
+        retry_tasks.append(task)
+    
+    for completed_retry in tqdm(
+        asyncio.as_completed(retry_tasks),
+        total=len(retry_tasks),
+        desc=f"🔁 Retrying {len(failed_ids)} failed requests...",
+        leave=True,
+        ncols=80
+    ):
+        scryfall_id, retry_url = await completed_retry
+        if retry_url:
+            image_cache[scryfall_id] = retry_url
+        else:
+            tqdm.write(f"❌ Still failed after retry: {scryfall_id}")
+    
+    with open("permanent_failures.log", "a") as f:
+        for scryfall_id in failed_ids:
+            if scryfall_id not in image_cache:
+                f.write(scryfall_id + "\n")
+
+
 # Asynchronously fetch all missing image URLs and update the cache
 async def fetch_all_images(remaining_ids, image_cache, image_cache_name):
     # Clear log files
     open("fetch_errors.log", "w").close()
     open("missing_image_uris.log", "w").close()
+    open("permanent_failures.log", "w").close()
 
     # Limit concurrency and request timeout
     connector = aiohttp.TCPConnector(limit=5)
@@ -103,6 +135,7 @@ async def fetch_all_images(remaining_ids, image_cache, image_cache_name):
     semaphore = asyncio.Semaphore(1)  # Allow only 1 request at a time to avoid 429s
 
     tasks = []
+    failed_ids = []
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
         for scryfall_id in tqdm(
             remaining_ids, desc="🌐 Fetching new image URLs", leave=True, ncols=80
@@ -124,11 +157,16 @@ async def fetch_all_images(remaining_ids, image_cache, image_cache_name):
 
             if image_url:
                 image_cache[scryfall_id] = image_url
+            else:
+                failed_ids.append(scryfall_id)
 
             await asyncio.sleep(0.11)  # Keep requests under 10/sec (Scryfall's limit)
 
             if i % 100 == 0 and i != 0:
                 save_cache(image_cache_name, image_cache)
+        
+        
+        await retry_failed_fetches(failed_ids, image_cache, session, semaphore)
 
 
 def main():
