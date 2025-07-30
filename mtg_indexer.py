@@ -1,11 +1,11 @@
-from cache_preloader import main as run_cache_preloader
+from scryfall_bulk_loader import main as run_bulk_loader
 from index_cards import main as run_indexing
 import time
 import tqdm
 
 
 def main():
-    run_cache_preloader()
+    run_bulk_loader()
     run_indexing()
 
 if __name__ == "__main__":

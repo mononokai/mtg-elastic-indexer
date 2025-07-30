@@ -6,6 +6,10 @@ from glob import glob
 from tqdm import tqdm
 from datetime import datetime
 
+
+# ! DEPRECATED: This script is no longer used.
+
+
 # User-Agent string for Scryfall API calls (per their API etiquette guidelines)
 HEADERS = {
     "User-Agent": "MTG-Elastic-Indexer (contact: leachda12@proton.me)",
