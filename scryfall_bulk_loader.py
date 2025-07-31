@@ -37,7 +37,7 @@ def download_bulk_data(download_url):
     response = requests.get(url=download_url, headers=HEADERS, stream=True)
     response.raise_for_status()
 
-    tqdm.write("⬇️ Downloading bulk card data...")
+    tqdm.write("⬇️  Downloading bulk card data...")
     with open("scryfall_bulk.json", "wb") as f:
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)

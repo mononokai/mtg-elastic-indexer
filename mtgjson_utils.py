@@ -21,7 +21,7 @@ def download_and_extract_zip(url, zip_filename, extract_dir):
         shutil.rmtree(extract_dir)
 
     # Extract zip file
-    with zipfile.ZipFile(zip_filename, "R") as zip_ref:
+    with zipfile.ZipFile(zip_filename, "r") as zip_ref:
         zip_ref.extractall(extract_dir)
     tqdm.write(f"🗂️ Extracted to {extract_dir}/.")
 
