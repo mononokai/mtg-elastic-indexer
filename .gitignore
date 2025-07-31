@@ -1,7 +1,9 @@
 AllSetFiles/
+AllSetFiles.zip
 testing.py
 .env
 image_cache.json
 scryfall_bulk.json
 __pycache__/
 *.log
+.vscode/
