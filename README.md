@@ -26,17 +26,21 @@ This script indexes Magic: The Gathering card and token data into a local Elasti
     → ([Elastic Docs: Run Elasticsearch Locally](https://www.elastic.co/docs/solutions/search/run-elasticsearch-locally))
 3. **If you don't have your Elasticsearch API key, create a new one**
     → ([Elastic Docs: Create an API Key](https://www.elastic.co/docs/deploy-manage/api-keys/elasticsearch-api-keys#create-api-key))
-4. **Create a `.env` file in the root directory which your API key:**
+4. **Create a `.env` file in the root directory and store your API key:**
    ```env
    ELASTIC_KEY="your_api_key_here"
    ```
-5. **Make sure you have Python 3.8+ installed**
-6. **Install dependencies:** 
+5. **Add your email to the `.env` file as well for the Scryfall API call:**
+   ```env
+   USER_EMAIL="your_email_here"
+   ```
+6. **Make sure you have Python 3.8+ installed**
+7. **Install dependencies:** 
    ```bash
    pip install -r requirements.txt
    ```
-7. **Run the indexer script:** 
+8. **Run the indexer script:** 
    ```bash
    python mtg_indexer.py
    ```
-8.  Done! Your MTG cards should now be indexed into Elasticsearch under the default index name `mtg_cards`
+9.  Done! Your MTG cards should now be indexed into Elasticsearch under the default index name `mtg_cards`
